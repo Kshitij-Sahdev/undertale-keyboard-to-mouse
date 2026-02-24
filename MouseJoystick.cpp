@@ -21,22 +21,18 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
-
 #ifndef PROPID
 typedef ULONG PROPID;
 #endif
-
 #include <gdiplus.h>
 #include <psapi.h>
 #include <tlhelp32.h>
 #include <dwmapi.h>
-
 #include <functional>
+#include <iostream>
 #include <cmath>
-
 #include <atomic>
 #include <chrono>
-#include <cmath>
 #include <mutex>
 #include <string>
 #include <thread>
