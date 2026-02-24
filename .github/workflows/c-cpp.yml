@@ -44,14 +44,14 @@ jobs:
       run: |
         ls -lh MouseJoystick.exe
         file MouseJoystick.exe
-               
+
     - name: Create Release on Main Push
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: build-${{ github.sha }}
-          name: build-${{ github.sha }}
-          files: MouseJoystick.exe
-          body: built automatically from latest commit.
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: build-${{ github.sha }}
+        name: build-${{ github.sha }}
+        files: MouseJoystick.exe
+        body: built automatically from latest commit.
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
