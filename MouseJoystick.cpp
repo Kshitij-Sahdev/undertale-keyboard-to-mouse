@@ -41,6 +41,8 @@ typedef ULONG PROPID;
 #include <algorithm>
 #include <sstream>
 #include <cstdio>
+#include <io.h>      // For _setmode
+#include <fcntl.h>   // For _O_U16TEXT
 
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "gdi32.lib")
@@ -521,20 +523,13 @@ Overlay* Overlay::s_self = nullptr;
 //  SECTION 5 — Window Picker (console UI)
 // ═══════════════════════════════════════════════════════════════════
 
-// DIAGNOSTIC VERSION - Replace PickWindow() temporarily to debug:
-
-// THE REAL FIX - Replace PickWindow() with this:
-
 static WindowInfo PickWindow() {
     AllocConsole();
-    FILE *fout{}, *fin{};
-    freopen_s(&fout, "CONOUT$", "w", stdout);
-    freopen_s(&fin,  "CONIN$",  "r", stdin);
     
-    std::ios::sync_with_stdio(true);
-    std::wcout.clear(); 
-    std::wcin.clear();
-
+    // CRITICAL: Set console to UTF-16 mode for wide characters
+    _setmode(_fileno(stdout), _O_U16TEXT);
+    _setmode(_fileno(stdin), _O_U16TEXT);
+    
     auto wins = EnumerateWindows();
 
     wprintf(L"\n  ╔══════════════════════════════════════════════════════════════╗\n");
@@ -542,27 +537,21 @@ static WindowInfo PickWindow() {
     wprintf(L"  ╚══════════════════════════════════════════════════════════════╝\n\n");
 
     for (int i = 0; i < (int)wins.size(); ++i) {
-        // Truncate title if too long
         std::wstring title = wins[i].title;
         if (title.length() > 45) {
             title = title.substr(0, 42) + L"...";
         }
         
-        // USE %ls NOT %s FOR WIDE STRINGS!
-        wprintf(L"  [%2d] %-45ls (%ls)\n", 
+        wprintf(L"  [%2d] %-45s (%s)\n",   // Back to %s because console is now in wide mode!
                 i, 
                 title.c_str(),
                 wins[i].processName.c_str());
     }
 
     wprintf(L"\n  Select window index: ");
-    fflush(stdout);
     
     int idx = -1;
-    if (wscanf_s(L"%d", &idx) != 1) {
-        FreeConsole();
-        std::exit(1);
-    }
+    wscanf_s(L"%d", &idx);
 
     FreeConsole();
 
