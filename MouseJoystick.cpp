@@ -523,6 +523,8 @@ Overlay* Overlay::s_self = nullptr;
 
 // DIAGNOSTIC VERSION - Replace PickWindow() temporarily to debug:
 
+// THE REAL FIX - Replace PickWindow() with this:
+
 static WindowInfo PickWindow() {
     AllocConsole();
     FILE *fout{}, *fin{};
@@ -530,40 +532,45 @@ static WindowInfo PickWindow() {
     freopen_s(&fin,  "CONIN$",  "r", stdin);
     
     std::ios::sync_with_stdio(true);
+    std::wcout.clear(); 
+    std::wcin.clear();
 
     auto wins = EnumerateWindows();
 
-    wprintf(L"\n=== DIAGNOSTIC OUTPUT ===\n");
-    wprintf(L"Found %d windows\n\n", (int)wins.size());
-
-    for (int i = 0; i < (int)wins.size() && i < 5; ++i) {
-        wprintf(L"Window %d:\n", i);
-        wprintf(L"  Title length: %d\n", (int)wins[i].title.length());
-        wprintf(L"  Title (raw): [%s]\n", wins[i].title.c_str());
-        wprintf(L"  Process length: %d\n", (int)wins[i].processName.length());
-        wprintf(L"  Process (raw): [%s]\n\n", wins[i].processName.c_str());
-    }
-
-    wprintf(L"\n  ╔══════════════════════════════════════════╗\n");
-    wprintf(L"  ║   Mouse Joystick — Window Picker         ║\n");
-    wprintf(L"  ╚══════════════════════════════════════════╝\n\n");
+    wprintf(L"\n  ╔══════════════════════════════════════════════════════════════╗\n");
+    wprintf(L"  ║        Mouse Joystick Overlay — Window Picker                ║\n");
+    wprintf(L"  ╚══════════════════════════════════════════════════════════════╝\n\n");
 
     for (int i = 0; i < (int)wins.size(); ++i) {
-        wprintf(L"  [%2d] %s (%s)\n", 
+        // Truncate title if too long
+        std::wstring title = wins[i].title;
+        if (title.length() > 45) {
+            title = title.substr(0, 42) + L"...";
+        }
+        
+        // USE %ls NOT %s FOR WIDE STRINGS!
+        wprintf(L"  [%2d] %-45ls (%ls)\n", 
                 i, 
-                wins[i].title.c_str(),
+                title.c_str(),
                 wins[i].processName.c_str());
     }
 
-    wprintf(L"\n  Select index: ");
+    wprintf(L"\n  Select window index: ");
     fflush(stdout);
     
     int idx = -1;
-    wscanf_s(L"%d", &idx);
+    if (wscanf_s(L"%d", &idx) != 1) {
+        FreeConsole();
+        std::exit(1);
+    }
 
     FreeConsole();
 
-    if (idx < 0 || idx >= (int)wins.size()) std::exit(1);
+    if (idx < 0 || idx >= (int)wins.size()) {
+        MessageBoxW(nullptr, L"Invalid selection", L"Error", MB_OK | MB_ICONERROR);
+        std::exit(1);
+    }
+    
     return wins[idx];
 }
 
