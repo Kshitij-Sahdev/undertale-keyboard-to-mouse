@@ -1,0 +1,80 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ "main" ]
+    tags:
+      - 'v*'  # Triggers on version tags like v1.0.0
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install MinGW cross-compiler
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y mingw-w64 zip
+    
+    - name: Build Windows executable
+      run: |
+        x86_64-w64-mingw32-g++ \
+          -O2 \
+          -std=c++20 \
+          -mwindows \
+          -o MouseJoystick.exe \
+          MouseJoystick.cpp \
+          -luser32 \
+          -lgdi32 \
+          -lgdiplus \
+          -lpsapi \
+          -ldwmapi \
+          -static-libgcc \
+          -static-libstdc++ \
+          || { echo "Build failed! Check the error log above."; exit 1; }
+    
+    - name: Verify build
+      run: |
+        ls -lh MouseJoystick.exe
+        file MouseJoystick.exe
+        
+    - name: Create release archive
+      run: |
+        zip MouseJoystick-Windows.zip MouseJoystick.exe README.md
+        
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: MouseJoystick-Windows
+        path: MouseJoystick-Windows.zip
+        
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: MouseJoystick-Windows.zip
+        body: |
+          ## Download and Run
+          
+          1. Download `MouseJoystick-Windows.zip`
+          2. Extract the zip file (right-click → Extract All)
+          3. Double-click `MouseJoystick.exe` to run
+          4. Start Undertale and enjoy!
+          
+          **No installation or setup required!**
+          
+          ### Troubleshooting
+          
+          If Windows shows "Windows protected your PC":
+          - Click "More info"
+          - Click "Run anyway"
+          
+          This happens because the app isn't code-signed (costs $$$). The app is safe!
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
