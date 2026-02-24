@@ -525,43 +525,50 @@ Overlay* Overlay::s_self = nullptr;
 
 static WindowInfo PickWindow() {
     AllocConsole();
-    
-    // Set console to UTF-16 mode for wide characters
-    _setmode(_fileno(stdout), _O_U16TEXT);
-    _setmode(_fileno(stdin), _O_U16TEXT);
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    HANDLE hIn = GetStdHandle(STD_INPUT_HANDLE);
     
     auto wins = EnumerateWindows();
 
-    wprintf(L"\n  ╔══════════════════════════════════════════════════════════════╗\n");
-    wprintf(L"  ║        Mouse Joystick Overlay — Window Picker                ║\n");
-    wprintf(L"  ╚══════════════════════════════════════════════════════════════╝\n\n");
+    // Helper lambda to write wide strings to console
+    auto WriteWStr = [&](const wchar_t* str) {
+        DWORD written;
+        WriteConsoleW(hOut, str, (DWORD)wcslen(str), &written, nullptr);
+    };
 
+    WriteWStr(L"\n  ╔══════════════════════════════════════════════════════════════╗\n");
+    WriteWStr(L"  ║        Mouse Joystick Overlay — Window Picker                ║\n");
+    WriteWStr(L"  ╚══════════════════════════════════════════════════════════════╝\n\n");
+
+    // Display windows
     for (int i = 0; i < (int)wins.size(); ++i) {
         std::wstring title = wins[i].title;
         if (title.length() > 45) {
             title = title.substr(0, 42) + L"...";
         }
         
-        wprintf(L"  [%2d] %s (%s)\n", 
-                i, 
-                title.c_str(),
-                wins[i].processName.c_str());
+        wchar_t line[512];
+        swprintf_s(line, L"  [%2d] %-45s (%s)\n", 
+                   i, 
+                   title.c_str(),
+                   wins[i].processName.c_str());
+        WriteWStr(line);
     }
 
-    wprintf(L"\n  Select window index (0-%d): ", (int)wins.size() - 1);
-    fflush(stdout);
-    
-    // Read input as wide string, then parse
-    wchar_t input[64] = {};
-    if (!fgetws(input, 64, stdin)) {
+    WriteWStr(L"\n  Select window index: ");
+
+    // Read input using native Windows API
+    wchar_t inputBuf[64] = {};
+    DWORD charsRead = 0;
+    if (!ReadConsoleW(hIn, inputBuf, 63, &charsRead, nullptr) || charsRead == 0) {
         FreeConsole();
         MessageBoxW(nullptr, L"Failed to read input", L"Error", MB_OK | MB_ICONERROR);
         std::exit(1);
     }
-    
-    // Parse the integer
+
+    // Parse the number
     int idx = -1;
-    if (swscanf_s(input, L"%d", &idx) != 1) {
+    if (swscanf_s(inputBuf, L"%d", &idx) != 1) {
         FreeConsole();
         MessageBoxW(nullptr, L"Invalid number format", L"Error", MB_OK | MB_ICONERROR);
         std::exit(1);
@@ -571,7 +578,7 @@ static WindowInfo PickWindow() {
 
     if (idx < 0 || idx >= (int)wins.size()) {
         wchar_t msg[256];
-        swprintf_s(msg, L"Invalid index: %d\nMust be between 0 and %d", idx, (int)wins.size() - 1);
+        swprintf_s(msg, L"Index %d is out of range (0-%d)", idx, (int)wins.size() - 1);
         MessageBoxW(nullptr, msg, L"Error", MB_OK | MB_ICONERROR);
         std::exit(1);
     }
