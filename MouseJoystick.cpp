@@ -446,7 +446,7 @@ private:
 
             // ── vector arrow ────────────────────────────────────
             if (st.dist > 0.f) {
-                float ang    = std::atan2f((float)st.dyPx, (float)st.dxPx);
+                float ang = std::atan2((float)st.dyPx, (float)st.dxPx);
                 float visLen = (std::min(st.dist, mr) / mr) * mr;
                 float ex = cx + visLen * std::cos(ang);
                 float ey = cy + visLen * std::sin(ang);
