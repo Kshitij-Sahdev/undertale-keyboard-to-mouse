@@ -36,7 +36,8 @@ jobs:
           -lpsapi \
           -ldwmapi \
           -static-libgcc \
-          -static-libstdc++
+          -static-libstdc++ \
+          || { echo "Build failed! Check the error log above."; exit 1; }
     
     - name: Verify build
       run: |
