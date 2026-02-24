@@ -526,7 +526,7 @@ Overlay* Overlay::s_self = nullptr;
 static WindowInfo PickWindow() {
     AllocConsole();
     
-    // CRITICAL: Set console to UTF-16 mode for wide characters
+    // Set console to UTF-16 mode for wide characters
     _setmode(_fileno(stdout), _O_U16TEXT);
     _setmode(_fileno(stdin), _O_U16TEXT);
     
@@ -542,21 +542,37 @@ static WindowInfo PickWindow() {
             title = title.substr(0, 42) + L"...";
         }
         
-        wprintf(L"  [%2d] %-45s (%s)\n",   // Back to %s because console is now in wide mode!
+        wprintf(L"  [%2d] %s (%s)\n", 
                 i, 
                 title.c_str(),
                 wins[i].processName.c_str());
     }
 
-    wprintf(L"\n  Select window index: ");
+    wprintf(L"\n  Select window index (0-%d): ", (int)wins.size() - 1);
+    fflush(stdout);
     
+    // Read input as wide string, then parse
+    wchar_t input[64] = {};
+    if (!fgetws(input, 64, stdin)) {
+        FreeConsole();
+        MessageBoxW(nullptr, L"Failed to read input", L"Error", MB_OK | MB_ICONERROR);
+        std::exit(1);
+    }
+    
+    // Parse the integer
     int idx = -1;
-    wscanf_s(L"%d", &idx);
+    if (swscanf_s(input, L"%d", &idx) != 1) {
+        FreeConsole();
+        MessageBoxW(nullptr, L"Invalid number format", L"Error", MB_OK | MB_ICONERROR);
+        std::exit(1);
+    }
 
     FreeConsole();
 
     if (idx < 0 || idx >= (int)wins.size()) {
-        MessageBoxW(nullptr, L"Invalid selection", L"Error", MB_OK | MB_ICONERROR);
+        wchar_t msg[256];
+        swprintf_s(msg, L"Invalid index: %d\nMust be between 0 and %d", idx, (int)wins.size() - 1);
+        MessageBoxW(nullptr, msg, L"Error", MB_OK | MB_ICONERROR);
         std::exit(1);
     }
     
