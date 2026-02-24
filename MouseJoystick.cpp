@@ -526,22 +526,31 @@ static WindowInfo PickWindow() {
     FILE *fout{}, *fin{};
     freopen_s(&fout, "CONOUT$", "w", stdout);
     freopen_s(&fin,  "CONIN$",  "r", stdin);
-    std::wcout.clear(); std::wcin.clear();
+    
+    // Force sync with C streams for MinGW
+    std::ios::sync_with_stdio(true);
+    std::wcout.clear(); 
+    std::wcin.clear();
 
     auto wins = EnumerateWindows();
 
-    std::wcout << L"\n  ╔══════════════════════════════════════════╗\n"
-               << L"  ║   Mouse Joystick Overlay — Window Picker ║\n"
-               << L"  ╚══════════════════════════════════════════╝\n\n";
+    // Use wprintf instead of wcout for better MinGW compatibility
+    wprintf(L"\n  ╔══════════════════════════════════════════╗\n");
+    wprintf(L"  ║   Mouse Joystick Overlay — Window Picker ║\n");
+    wprintf(L"  ╚══════════════════════════════════════════╝\n\n");
 
-    for (int i = 0; i < (int)wins.size(); ++i)
-        std::wcout << L"  [" << i << L"] "
-                   << wins[i].title.substr(0, 55)
-                   << L"  (" << wins[i].processName << L")\n";
+    for (int i = 0; i < (int)wins.size(); ++i) {
+        wprintf(L"  [%d] %s  (%s)\n", 
+                i, 
+                wins[i].title.substr(0, 55).c_str(),
+                wins[i].processName.c_str());
+    }
 
-    std::wcout << L"\n  Select index: ";
+    wprintf(L"\n  Select index: ");
+    fflush(stdout);  // Force flush before reading input
+    
     int idx = 0;
-    std::wcin >> idx;
+    wscanf_s(L"%d", &idx);
 
     FreeConsole();
 
