@@ -521,35 +521,44 @@ Overlay* Overlay::s_self = nullptr;
 //  SECTION 5 — Window Picker (console UI)
 // ═══════════════════════════════════════════════════════════════════
 
+// DIAGNOSTIC VERSION - Replace PickWindow() temporarily to debug:
+
 static WindowInfo PickWindow() {
     AllocConsole();
     FILE *fout{}, *fin{};
     freopen_s(&fout, "CONOUT$", "w", stdout);
     freopen_s(&fin,  "CONIN$",  "r", stdin);
     
-    // Force sync with C streams for MinGW
     std::ios::sync_with_stdio(true);
-    std::wcout.clear(); 
-    std::wcin.clear();
 
     auto wins = EnumerateWindows();
 
-    // Use wprintf instead of wcout for better MinGW compatibility
+    wprintf(L"\n=== DIAGNOSTIC OUTPUT ===\n");
+    wprintf(L"Found %d windows\n\n", (int)wins.size());
+
+    for (int i = 0; i < (int)wins.size() && i < 5; ++i) {
+        wprintf(L"Window %d:\n", i);
+        wprintf(L"  Title length: %d\n", (int)wins[i].title.length());
+        wprintf(L"  Title (raw): [%s]\n", wins[i].title.c_str());
+        wprintf(L"  Process length: %d\n", (int)wins[i].processName.length());
+        wprintf(L"  Process (raw): [%s]\n\n", wins[i].processName.c_str());
+    }
+
     wprintf(L"\n  ╔══════════════════════════════════════════╗\n");
-    wprintf(L"  ║   Mouse Joystick Overlay — Window Picker ║\n");
+    wprintf(L"  ║   Mouse Joystick — Window Picker         ║\n");
     wprintf(L"  ╚══════════════════════════════════════════╝\n\n");
 
     for (int i = 0; i < (int)wins.size(); ++i) {
-        wprintf(L"  [%d] %s  (%s)\n", 
+        wprintf(L"  [%2d] %s (%s)\n", 
                 i, 
-                wins[i].title.substr(0, 55).c_str(),
+                wins[i].title.c_str(),
                 wins[i].processName.c_str());
     }
 
     wprintf(L"\n  Select index: ");
-    fflush(stdout);  // Force flush before reading input
+    fflush(stdout);
     
-    int idx = 0;
+    int idx = -1;
     wscanf_s(L"%d", &idx);
 
     FreeConsole();
