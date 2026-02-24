@@ -44,47 +44,14 @@ jobs:
       run: |
         ls -lh MouseJoystick.exe
         file MouseJoystick.exe
-        
-    - name: Create release archive
-      run: |
-        zip MouseJoystick-Windows.zip MouseJoystick.exe README.md
-        
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: MouseJoystick-Windows
-        path: MouseJoystick-Windows.zip
-        
+               
     - name: Create Release on Main Push
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: build-${{ github.sha }}
-        name: Latest Build (commit ${{ github.sha }})
-        files: MouseJoystick-Windows.zip
-        body: |
-          ##Download and Run
-          
-          **Auto-built from latest commit: `${{ github.sha }}`**
-          
-          1. Download `MouseJoystick-Windows.zip`
-          2. Extract the zip file (right-click → Extract All)
-          3. Double-click `MouseJoystick.exe` to run
-          4. Start Undertale and enjoy!
-          
-          **No installation or setup required!**
-          
-          ### Troubleshooting
-          
-          If Windows shows "Windows protected your PC":
-          - Click "More info"
-          - Click "Run anyway"
-          
-          This happens because the app isn't code-signed (costs $$$). The app is safe!
-          
-          ### Commit Details
-          - Commit: ${{ github.sha }}
-          - Author: ${{ github.actor }}
-          - Message: ${{ github.event.head_commit.message }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: build-${{ github.sha }}
+          name: build-${{ github.sha }}
+          files: MouseJoystick.exe
+          body: built automatically from latest commit.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
